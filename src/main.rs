@@ -1,23 +1,65 @@
-use bevy::asset::AssetMetaCheck;
-use bevy::prelude::*;
+use avian3d::prelude::*;
+use bevy::{
+    input::common_conditions::input_just_pressed,
+    prelude::*,
+    window::{CursorGrabMode, CursorOptions},
+};
+use bevy_enhanced_input::prelude::*;
+use bevy_skein::SkeinPlugin;
 
-fn main() {
+use crate::utils::{ExampleUtilPlugin, StableGround};
+
+mod player;
+mod utils;
+
+fn main() -> AppExit {
     App::new()
-        .add_plugins(DefaultPlugins.set(AssetPlugin {
-            // Wasm builds will check for meta files (that don't exist) if this isn't set.
-            // This causes errors and even panics in web builds on itch.
-            // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
-            meta_check: AssetMetaCheck::Never,
-            ..default()
-        }))
+        .add_plugins(DefaultPlugins)
+        .add_plugins((
+            EnhancedInputPlugin,
+            SkeinPlugin::default(),
+            PhysicsPlugins::default(),
+        ))
+        .add_plugins(ExampleUtilPlugin)
+        .add_plugins(player::plugin)
         .add_systems(Startup, setup)
-        .run();
+        .add_systems(
+            Update,
+            (
+                capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
+                release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+            ),
+        )
+        .run()
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2d);
-    commands.spawn(Sprite {
-        image: asset_server.load("ducky.png"),
-        ..Default::default()
-    });
+fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+    debug!("hi");
+    // Spawn a directional light
+    commands.spawn((
+        Transform::from_xyz(0.0, 1.0, 0.0).looking_at(vec3(1.0, -2.0, -2.0), Vec3::Y),
+        DirectionalLight {
+            shadows_enabled: true,
+            ..default()
+        },
+    ));
+
+    // Spawn the level. This can be done in whatever way you prefer: spawn individual colliders, load a scene, use Skein, use bevy_trenchbroom, etc.
+    // Ahoy will deal with it all.
+    // Here we load a glTF file and create a convex hull collider for each mesh.
+    commands.spawn((
+        SceneRoot(assets.load("room.glb#Scene0")),
+        //RigidBody::Static,
+        //ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
+    ));
+}
+
+fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
+    cursor.grab_mode = CursorGrabMode::Locked;
+    cursor.visible = false;
+}
+
+fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
+    cursor.visible = true;
+    cursor.grab_mode = CursorGrabMode::None;
 }
