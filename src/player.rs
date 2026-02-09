@@ -25,8 +25,7 @@ fn spawn_player(_: On<Add, Player>, mut cmd: Commands) {
             // Add the character controller configuration. We'll use the default settings for now.
             CharacterController::default(),
             // The KCC currently behaves best when using a cylinder
-            Collider::cylinder(0.7, 1.8),
-            Transform::from_xyz(0.0, 0.0, 0.0),
+            Collider::cylinder(0.4, 1.8),
             StableGround::default(),
             // Configure inputs. The actions `Movement`, `Jump`, etc. are provided by Ahoy, you just need to bind them.
             PlayerInput,

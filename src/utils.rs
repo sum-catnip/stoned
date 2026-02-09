@@ -34,20 +34,15 @@ impl Plugin for ExampleUtilPlugin {
             Update,
             (
                 update_debug_text,
-                tweak_materials,
                 generate_mipmaps::<StandardMaterial>,
                 calculate_stable_ground.run_if(on_timer(Duration::from_secs(1))),
                 apply_last_stable_ground.after(calculate_stable_ground),
             ),
         )
         .add_observer(reset_player)
-        .add_observer(tweak_camera)
-        .add_observer(tweak_directional_light)
         .add_observer(toggle_debug)
         .add_observer(unlock_cursor_web)
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
-        .insert_resource(GlobalAmbientLight::NONE)
-        .add_systems(Update, turn_sun)
         .add_input_context::<DebugInput>();
     }
 }
@@ -229,73 +224,6 @@ fn reset_player_inner(
     camera_transform.rotation = Quat::IDENTITY;
 }
 
-fn tweak_camera(
-    insert: On<Insert, Camera3d>,
-    mut commands: Commands,
-    assets: Res<AssetServer>,
-    mut scattering_mediums: ResMut<Assets<ScatteringMedium>>,
-) {
-    commands.entity(insert.entity).insert((
-        EnvironmentMapLight {
-            diffuse_map: assets.load("environment_maps/voortrekker_interior_1k_diffuse.ktx2"),
-            specular_map: assets.load("environment_maps/voortrekker_interior_1k_specular.ktx2"),
-            intensity: 600.0,
-            ..default()
-        },
-        Projection::Perspective(PerspectiveProjection {
-            fov: 70.0_f32.to_radians(),
-            ..default()
-        }),
-        Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
-        Exposure { ev100: 9.0 },
-        Bloom::default(),
-    ));
-}
-
-fn tweak_directional_light(
-    insert: On<Insert, DirectionalLight>,
-    mut commands: Commands,
-    directional_light: Query<(&Transform, &DirectionalLight), Without<Tweaked>>,
-    tweaked: Query<Entity, With<Tweaked>>,
-) {
-    let Ok((_transform, light)) = directional_light.get(insert.entity) else {
-        return;
-    };
-    // Can't despawn stuff from scenes in an observer, so let's just make it useless
-    commands.entity(insert.entity).remove::<DirectionalLight>();
-
-    for entity in tweaked.iter() {
-        commands.entity(entity).despawn();
-    }
-    commands.spawn((
-        // The shadow map can only be configured on a freshly spawned light
-        DirectionalLight {
-            shadows_enabled: true,
-            illuminance: lux::AMBIENT_DAYLIGHT,
-            ..*light
-        },
-        Transform::IDENTITY,
-        Tweaked,
-        CascadeShadowConfigBuilder {
-            maximum_distance: 500.0,
-            overlap_proportion: 0.4,
-            ..default()
-        }
-        .build(),
-    ));
-}
-
-#[derive(Component)]
-struct Tweaked;
-fn turn_sun(mut suns: Query<&mut Transform, With<DirectionalLight>>, time: Res<Time>) {
-    for mut transform in suns.iter_mut() {
-        transform.rotation =
-            Quat::from_rotation_x(
-                -((-time.elapsed_secs() / 100.0) + TAU / 8.0).sin().abs() * TAU / 2.05,
-            ) * Quat::from_rotation_y(((-time.elapsed_secs() / 100.0) + 1.0).sin());
-    }
-}
-
 fn unlock_cursor_web(
     _unlock: On<ForceUnlockCursor>,
     mut cursor_options: Single<&mut CursorOptions>,
@@ -319,41 +247,6 @@ fn spawn_crosshair(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn(ImageNode::new(crosshair_texture).with_color(Color::WHITE.with_alpha(0.3)));
         });
-}
-
-fn tweak_materials(
-    mut asset_events: MessageReader<AssetEvent<StandardMaterial>>,
-    mut mats: ResMut<Assets<StandardMaterial>>,
-    assets: Res<AssetServer>,
-) {
-    for event in asset_events.read() {
-        let AssetEvent::LoadedWithDependencies { id } = event else {
-            continue;
-        };
-        let Some(mat) = mats.get_mut(*id) else {
-            continue;
-        };
-        if mat
-            .base_color_texture
-            .as_ref()
-            .and_then(|t| {
-                assets
-                    .get_path(t.id())?
-                    .path()
-                    .file_name()?
-                    .to_string_lossy()
-                    .to_lowercase()
-                    .into()
-            })
-            .is_some_and(|name| name.contains("water_01"))
-        {
-            mat.base_color = Color::WHITE.with_alpha(0.85);
-            mat.perceptual_roughness = 0.2;
-            mat.alpha_mode = AlphaMode::Blend;
-        } else {
-            mat.perceptual_roughness = 0.8;
-        }
-    }
 }
 
 #[derive(Component, Reflect)]
