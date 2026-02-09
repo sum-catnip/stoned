@@ -1,5 +1,14 @@
 use avian3d::prelude::*;
-use bevy::prelude::*;
+use bevy::{
+    core_pipeline::{prepass::DepthPrepass, tonemapping::Tonemapping},
+    post_process::{
+        bloom::Bloom,
+        dof::{DepthOfField, DepthOfFieldMode},
+        effect_stack::ChromaticAberration,
+    },
+    prelude::*,
+    render::view::Hdr,
+};
 use bevy_ahoy::prelude::*;
 use bevy_enhanced_input::prelude::*;
 
@@ -62,6 +71,16 @@ fn spawn_player(_: On<Add, Player>, mut cmd: Commands) {
 
     // Spawn the player camera
     cmd.spawn((
+        IsDefaultUiCamera,
+        (
+            Msaa::Sample8,
+            Bloom::NATURAL,
+            Hdr,
+            DepthPrepass,
+            DepthOfField::default(),
+            ChromaticAberration::default(),
+            Tonemapping::ReinhardLuminance,
+        ),
         Camera3d::default(),
         // Enable the optional builtin camera controller
         CharacterControllerCameraOf::new(player),
