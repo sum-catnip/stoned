@@ -8,6 +8,7 @@ use bevy::{
     ecs::world::FilteredEntityRef,
     light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap, light_consts::lux},
     pbr::{Atmosphere, ScatteringMedium},
+    picking::hover::PickingInteraction,
     platform::collections::HashSet,
     post_process::bloom::Bloom,
     prelude::*,
@@ -35,11 +36,11 @@ impl Plugin for ExampleUtilPlugin {
             (
                 update_debug_text,
                 //generate_mipmaps::<StandardMaterial>,
-                calculate_stable_ground.run_if(on_timer(Duration::from_secs(1))),
-                apply_last_stable_ground.after(calculate_stable_ground),
+                //calculate_stable_ground.run_if(on_timer(Duration::from_secs(1))),
+                //apply_last_stable_ground.after(calculate_stable_ground),
             ),
         )
-        .add_observer(reset_player)
+        //.add_observer(reset_player)
         .add_observer(toggle_debug)
         .add_observer(unlock_cursor_web)
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
@@ -121,6 +122,7 @@ fn update_debug_text(
 }
 
 #[derive(Component, Reflect, Debug)]
+#[require(Name::new("debug text"))]
 #[reflect(Component)]
 struct DebugText;
 
@@ -132,6 +134,7 @@ fn setup_ui(mut commands: Commands) {
         DebugText,
     ));
     commands.spawn((
+        Name::new("controls"),
         Node {
             justify_self: JustifySelf::End,
             justify_content: JustifyContent::End,
@@ -236,13 +239,13 @@ fn unlock_cursor_web(
 fn spawn_crosshair(mut commands: Commands, asset_server: Res<AssetServer>) {
     let crosshair_texture = asset_server.load("sprites/crosshair.png");
     commands
-        .spawn(Node {
+        .spawn((Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
             ..default()
-        })
+        },))
         .with_children(|parent| {
             parent
                 .spawn(ImageNode::new(crosshair_texture).with_color(Color::WHITE.with_alpha(0.3)));

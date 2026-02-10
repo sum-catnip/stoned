@@ -16,11 +16,11 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = { version = "0.18", features = [ "file_watcher", "wayland", "bevy_ui_debug", "bevy_dev_tools"] }
+bevy = { version = "0.18", features = [ "file_watcher", "wayland", "bevy_ui_debug", "bevy_dev_tools", "dev", "bevy_ui_debug"] }
 bevy_enhanced_input = "0.23"
 
 # physics
-avian3d = "0.6.0-rc.1"
+avian3d = { version = "0.6.0-rc.1", features = ["bevy_diagnostic", "diagnostic_ui", "validate"] }
 avian_pickup = "0.5.0-rc.1"
 
 # character controller
@@ -31,6 +31,8 @@ bevy_framepace = { version = "0.21.0", git = "https://github.com/aevyrie/bevy_fr
 bevy_mod_mipmap_generator = { version = "0.1.0", git = "https://github.com/DGriffin91/bevy_mod_mipmap_generator" }
 wasm-bindgen = "=0.2.108"
 bevy_skein = "0.5.0"
+bevy-inspector-egui = "0.36.0"
+bevy_egui = "0.39.1"
 
 # These lints may be important signals about code quality, but normal Bevy code
 # commonly triggers them and the CI workflow treats them as errors, so we've
