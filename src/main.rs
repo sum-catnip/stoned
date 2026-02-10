@@ -3,7 +3,6 @@ use bevy::{
     dev_tools::picking_debug::{DebugPickingMode, DebugPickingPlugin},
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     image::ImageSamplerDescriptor,
-    input::common_conditions::input_just_pressed,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
@@ -12,10 +11,13 @@ use bevy_enhanced_input::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_skein::SkeinPlugin;
 
-use crate::utils::ExampleUtilPlugin;
+use crate::{utils::ExampleUtilPlugin, widgets::w};
 
 mod player;
 mod utils;
+mod widgets;
+
+const FILES: u32 = 5;
 
 fn main() -> AppExit {
     App::new()
@@ -50,6 +52,8 @@ fn main() -> AppExit {
         //    ),
         //)
         .init_resource::<Progress>()
+        .add_observer(on_file_collected)
+        .add_observer(on_w)
         .run()
 }
 
@@ -83,7 +87,7 @@ pub struct File;
 
 #[derive(Resource, Default)]
 pub struct Progress {
-    pub files_collected: u64,
+    pub files_collected: u32,
 }
 
 #[derive(Component, Reflect)]
@@ -95,11 +99,11 @@ pub struct Progress {
 #[reflect(Component, Default)]
 #[component(on_add = onadd_prop)]
 #[type_path = "stoned"]
-pub struct PropMesh {
+pub struct DynamicProp {
     density: f32,
 }
 
-impl Default for PropMesh {
+impl Default for DynamicProp {
     fn default() -> Self {
         Self { density: 1.0 }
     }
@@ -107,8 +111,43 @@ impl Default for PropMesh {
 
 fn onadd_prop(mut w: DeferredWorld, ctx: HookContext) {
     debug!("prop added");
-    let propmesh = w.get::<PropMesh>(ctx.entity).unwrap();
+    let propmesh = w.get::<DynamicProp>(ctx.entity).unwrap();
     let propmesh_density = propmesh.density;
     let mut density = w.get_mut::<ColliderDensity>(ctx.entity).unwrap();
     density.0 = propmesh_density;
+}
+
+#[derive(Component, Reflect)]
+#[require(ColliderConstructor::TrimeshFromMesh)]
+#[require(CollisionLayers::new(CollisionLayer::Default, LayerMask::ALL))]
+#[require(ColliderDensity(3000.))]
+#[require(RigidBody::Static)]
+#[reflect(Component)]
+#[type_path = "stoned"]
+pub struct StaticProp;
+
+#[derive(EntityEvent)]
+pub struct FileCollected {
+    #[event_target]
+    pub file: Entity,
+}
+
+fn on_file_collected(on: On<FileCollected>, mut cmd: Commands, mut prog: ResMut<Progress>) {
+    debug!("page collected, yay");
+    prog.files_collected += 1;
+    cmd.entity(on.file).despawn();
+    if prog.files_collected == FILES {
+        cmd.trigger(W);
+    }
+}
+
+#[derive(Event)]
+pub struct W;
+
+#[derive(Event)]
+pub struct BigL;
+
+fn on_w(_: On<W>, mut cmd: Commands) {
+    debug!("W");
+    cmd.spawn(w());
 }

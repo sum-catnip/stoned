@@ -1,3 +1,4 @@
+use avian_pickup::actor::AvianPickupActorState;
 use avian3d::prelude::*;
 use bevy::{
     core_pipeline::{prepass::DepthPrepass, tonemapping::Tonemapping},
@@ -9,10 +10,11 @@ use bevy_ahoy::{PickupHoldConfig, PickupPullConfig, prelude::*};
 use bevy_enhanced_input::prelude::Press;
 use bevy_enhanced_input::prelude::*;
 
-use crate::CollisionLayer;
+use crate::{CollisionLayer, File, FileCollected, Progress};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(AhoyPlugins::default())
+        .add_systems(Update, check_page_collect)
         .add_input_context::<PlayerInput>()
         .add_observer(spawn_player);
 }
@@ -90,7 +92,7 @@ fn spawn_player(t: On<Add, Player>, trans: Query<&Transform>, mut cmd: Commands)
             obstacle_filter: SpatialQueryFilter::from_mask(CollisionLayer::Default),
             hold: PickupHoldConfig {
                 preferred_distance: 0.9,
-                linear_velocity_easing: 0.8,
+                linear_velocity_easing: 0.3,
                 ..default()
             },
             pull: PickupPullConfig {
@@ -117,4 +119,21 @@ fn spawn_player(t: On<Add, Player>, trans: Query<&Transform>, mut cmd: Commands)
         // Enable the optional builtin camera controller
         CharacterControllerCameraOf::new(player),
     ));
+}
+
+fn check_page_collect(
+    mut cmd: Commands,
+    mut actor_state: Single<&mut AvianPickupActorState>,
+    files: Query<Entity, With<File>>,
+) {
+    let AvianPickupActorState::Holding(e) = actor_state.as_ref() else {
+        return;
+    };
+
+    if !files.contains(*e) {
+        return;
+    }
+
+    cmd.trigger(FileCollected { file: *e });
+    *actor_state.as_mut() = AvianPickupActorState::Idle;
 }
