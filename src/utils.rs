@@ -25,7 +25,7 @@ pub(super) struct ExampleUtilPlugin;
 impl Plugin for ExampleUtilPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            MipmapGeneratorPlugin,
+            //MipmapGeneratorPlugin,
             FixPointerUnlockPlugin,
             FramepacePlugin,
         ))
@@ -34,7 +34,7 @@ impl Plugin for ExampleUtilPlugin {
             Update,
             (
                 update_debug_text,
-                generate_mipmaps::<StandardMaterial>,
+                //generate_mipmaps::<StandardMaterial>,
                 calculate_stable_ground.run_if(on_timer(Duration::from_secs(1))),
                 apply_last_stable_ground.after(calculate_stable_ground),
             ),

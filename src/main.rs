@@ -1,5 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{
+    image::ImageSamplerDescriptor,
     input::common_conditions::input_just_pressed,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
@@ -14,7 +15,12 @@ mod utils;
 
 fn main() -> AppExit {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin {
+            default_sampler: ImageSamplerDescriptor {
+                anisotropy_clamp: 1,
+                ..ImageSamplerDescriptor::linear()
+            },
+        }))
         .add_plugins((
             EnhancedInputPlugin,
             SkeinPlugin::default(),

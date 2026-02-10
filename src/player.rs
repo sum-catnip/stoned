@@ -27,10 +27,11 @@ pub struct Player;
 #[derive(Component, Default)]
 pub(crate) struct PlayerInput;
 
-fn spawn_player(_: On<Add, Player>, mut cmd: Commands) {
+fn spawn_player(t: On<Add, Player>, mut cmd: Commands) {
     debug!("spawning player");
     let player = cmd
-        .spawn((
+        .entity(t.entity)
+        .insert((
             // Add the character controller configuration. We'll use the default settings for now.
             CharacterController::default(),
             // The KCC currently behaves best when using a cylinder
@@ -84,5 +85,6 @@ fn spawn_player(_: On<Add, Player>, mut cmd: Commands) {
         Camera3d::default(),
         // Enable the optional builtin camera controller
         CharacterControllerCameraOf::new(player),
+        ChildOf(player),
     ));
 }
