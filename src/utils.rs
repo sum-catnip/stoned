@@ -237,7 +237,7 @@ fn unlock_cursor_web(
 
 /// Show a crosshair for better aiming
 fn spawn_crosshair(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let crosshair_texture = asset_server.load("sprites/crosshair.png");
+    let crosshair_texture = asset_server.load("crosshair.webp");
     commands
         .spawn((Node {
             width: Val::Percent(100.0),

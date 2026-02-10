@@ -16,7 +16,7 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = { version = "0.18", features = [ "file_watcher", "wayland", "bevy_ui_debug", "bevy_dev_tools", "dev", "bevy_ui_debug"] }
+bevy = { version = "0.18", features = [ "file_watcher", "wayland", "bevy_ui_debug", "bevy_dev_tools", "dev", "bevy_ui_debug", "webp"] }
 bevy_enhanced_input = "0.23"
 
 # physics

@@ -11,7 +11,11 @@ use bevy_enhanced_input::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_skein::SkeinPlugin;
 
-use crate::{utils::ExampleUtilPlugin, widgets::w};
+use crate::{
+    player::DisablePlayer,
+    utils::ExampleUtilPlugin,
+    widgets::{FadeIn, l},
+};
 
 mod player;
 mod utils;
@@ -42,7 +46,7 @@ fn main() -> AppExit {
         ))
         .insert_resource(DebugPickingMode::Normal)
         .add_plugins(ExampleUtilPlugin)
-        .add_plugins(player::plugin)
+        .add_plugins((player::plugin, widgets::plugin))
         .add_systems(Startup, setup)
         //.add_systems(
         //    Update,
@@ -54,11 +58,13 @@ fn main() -> AppExit {
         .init_resource::<Progress>()
         .add_observer(on_file_collected)
         .add_observer(on_w)
+        .add_observer(on_l)
         .run()
 }
 
-fn setup(mut commands: Commands, assets: Res<AssetServer>) {
-    commands.spawn((SceneRoot(assets.load("room.glb#Scene0")),));
+fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
+    cmd.spawn((SceneRoot(assets.load("room.glb#Scene0")),));
+    //cmd.trigger(BigL);
 }
 
 fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
@@ -149,5 +155,11 @@ pub struct BigL;
 
 fn on_w(_: On<W>, mut cmd: Commands) {
     debug!("W");
-    cmd.spawn(w());
+    cmd.trigger(DisablePlayer);
+    //cmd.spawn(w());
+}
+
+fn on_l(_: On<BigL>, mut cmd: Commands, ass: Res<AssetServer>) {
+    debug!("L");
+    cmd.spawn((l(ass.load("souls_font.ttf")), FadeIn::new(1.5)));
 }

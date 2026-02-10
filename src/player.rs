@@ -1,7 +1,11 @@
-use avian_pickup::actor::AvianPickupActorState;
+use avian_pickup::{
+    actor::AvianPickupActorState,
+    input::{AvianPickupAction, AvianPickupInput},
+};
 use avian3d::prelude::*;
 use bevy::{
     core_pipeline::{prepass::DepthPrepass, tonemapping::Tonemapping},
+    ecs::entity_disabling::Disabled,
     post_process::{bloom::Bloom, dof::DepthOfField, effect_stack::ChromaticAberration},
     prelude::*,
     render::view::Hdr,
@@ -16,6 +20,9 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins(AhoyPlugins::default())
         .add_systems(Update, check_page_collect)
         .add_input_context::<PlayerInput>()
+        .init_resource::<PlayerRes>()
+        .add_observer(on_enable)
+        .add_observer(on_disable)
         .add_observer(spawn_player);
 }
 
@@ -26,7 +33,24 @@ pub struct Player;
 #[derive(Component, Default)]
 pub(crate) struct PlayerInput;
 
-fn spawn_player(t: On<Add, Player>, trans: Query<&Transform>, mut cmd: Commands) {
+#[derive(Resource, Default)]
+pub struct PlayerRes {
+    pub player: Option<Entity>,
+    pub cam: Option<Entity>,
+}
+
+#[derive(Event)]
+pub struct DisablePlayer;
+
+#[derive(Event)]
+pub struct EnablePlayer;
+
+fn spawn_player(
+    t: On<Add, Player>,
+    trans: Query<&Transform>,
+    mut cmd: Commands,
+    mut playerres: ResMut<PlayerRes>,
+) {
     debug!("spawning player");
     let player = cmd
         .spawn((
@@ -83,47 +107,55 @@ fn spawn_player(t: On<Add, Player>, trans: Query<&Transform>, mut cmd: Commands)
         ))
         .id();
 
+    playerres.player = Some(player);
+
     // Spawn the player camera
-    cmd.spawn((
-        Name::new("player cam"),
-        PickupConfig {
-            prop_filter: SpatialQueryFilter::from_mask(CollisionLayer::Prop),
-            actor_filter: SpatialQueryFilter::from_mask(CollisionLayer::Player),
-            obstacle_filter: SpatialQueryFilter::from_mask(CollisionLayer::Default),
-            hold: PickupHoldConfig {
-                preferred_distance: 0.9,
-                linear_velocity_easing: 0.3,
-                ..default()
-            },
-            pull: PickupPullConfig {
-                max_prop_mass: 1000.0,
-                ..default()
-            },
-            ..Default::default()
-        },
-        IsDefaultUiCamera,
-        (
-            Msaa::Sample8,
-            Bloom::NATURAL,
-            Hdr,
-            DepthPrepass,
-            DepthOfField {
-                focal_distance: 5.,
-                sensor_height: 0.001,
+    let playercam = cmd
+        .spawn((
+            Name::new("player cam"),
+            PickupConfig {
+                prop_filter: SpatialQueryFilter::from_mask(CollisionLayer::Prop),
+                actor_filter: SpatialQueryFilter::from_mask(CollisionLayer::Player),
+                obstacle_filter: SpatialQueryFilter::from_mask(CollisionLayer::Default),
+                hold: PickupHoldConfig {
+                    preferred_distance: 0.9,
+                    linear_velocity_easing: 0.3,
+                    ..default()
+                },
+                pull: PickupPullConfig {
+                    max_prop_mass: 1000.0,
+                    ..default()
+                },
                 ..Default::default()
             },
-            ChromaticAberration::default(),
-            Tonemapping::BlenderFilmic,
-        ),
-        Camera3d::default(),
-        // Enable the optional builtin camera controller
-        CharacterControllerCameraOf::new(player),
-    ));
+            IsDefaultUiCamera,
+            (
+                Msaa::Sample8,
+                Bloom::NATURAL,
+                Hdr,
+                DepthPrepass,
+                DepthOfField {
+                    focal_distance: 5.,
+                    sensor_height: 0.001,
+                    ..Default::default()
+                },
+                ChromaticAberration::default(),
+                Tonemapping::BlenderFilmic,
+            ),
+            Camera3d::default(),
+            // Enable the optional builtin camera controller
+            CharacterControllerCameraOf::new(player),
+        ))
+        .id();
+
+    playerres.cam = Some(playercam);
 }
 
 fn check_page_collect(
     mut cmd: Commands,
+    player: Res<PlayerRes>,
     mut actor_state: Single<&mut AvianPickupActorState>,
+    mut pickup_inputs: MessageWriter<AvianPickupInput>,
     files: Query<Entity, With<File>>,
 ) {
     let AvianPickupActorState::Holding(e) = actor_state.as_ref() else {
@@ -134,6 +166,19 @@ fn check_page_collect(
         return;
     }
 
+    // todo: Prop entity was deleted or in an invalid state.
+    pickup_inputs.write(AvianPickupInput {
+        actor: player.cam.unwrap(),
+        action: AvianPickupAction::Drop,
+    });
     cmd.trigger(FileCollected { file: *e });
     *actor_state.as_mut() = AvianPickupActorState::Idle;
+}
+
+fn on_enable(_: On<EnablePlayer>, mut cmd: Commands, player: Res<PlayerRes>) {
+    todo!()
+}
+
+fn on_disable(_: On<DisablePlayer>, mut cmd: Commands, player: Res<PlayerRes>) {
+    todo!()
 }
