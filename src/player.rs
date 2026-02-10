@@ -176,9 +176,14 @@ fn check_page_collect(
 }
 
 fn on_enable(_: On<EnablePlayer>, mut cmd: Commands, player: Res<PlayerRes>) {
-    todo!()
+    if let Some(e) = player.player {
+        cmd.entity(e).insert(ContextActivity::<PlayerInput>::ACTIVE);
+    }
 }
 
 fn on_disable(_: On<DisablePlayer>, mut cmd: Commands, player: Res<PlayerRes>) {
-    todo!()
+    if let Some(e) = player.player {
+        cmd.entity(e)
+            .insert(ContextActivity::<PlayerInput>::INACTIVE);
+    }
 }
