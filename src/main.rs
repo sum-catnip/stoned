@@ -1,8 +1,11 @@
+use std::time::{Duration, Instant};
+
 use avian3d::prelude::*;
 use bevy::{
     dev_tools::picking_debug::{DebugPickingMode, DebugPickingPlugin},
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     image::ImageSamplerDescriptor,
+    input::common_conditions::input_just_pressed,
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
@@ -14,7 +17,7 @@ use bevy_skein::SkeinPlugin;
 use crate::{
     player::DisablePlayer,
     utils::ExampleUtilPlugin,
-    widgets::{FadeIn, l},
+    widgets::{DialogueTypewriter, FadeIn, credits_screen, dialogue_box, dismiss_ui, l, timer},
 };
 
 mod player;
@@ -24,47 +27,59 @@ mod widgets;
 const FILES: u32 = 5;
 
 fn main() -> AppExit {
-    App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin {
-            default_sampler: ImageSamplerDescriptor {
-                anisotropy_clamp: 1,
-                ..ImageSamplerDescriptor::linear()
-            },
-        }))
-        .insert_resource(UiPickingSettings {
-            require_markers: true,
-        })
-        .add_plugins((
-            EnhancedInputPlugin,
-            SkeinPlugin::default(),
-            PhysicsPlugins::default(),
-            PhysicsPickingPlugin,
-            PhysicsDebugPlugin,
-            DebugPickingPlugin,
-            EguiPlugin::default(),
-            WorldInspectorPlugin::new(),
-        ))
-        .insert_resource(DebugPickingMode::Normal)
-        .add_plugins(ExampleUtilPlugin)
-        .add_plugins((player::plugin, widgets::plugin))
-        .add_systems(Startup, setup)
-        //.add_systems(
-        //    Update,
-        //    (
-        //        capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
-        //        release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
-        //    ),
-        //)
-        .init_resource::<Progress>()
-        .add_observer(on_file_collected)
-        .add_observer(on_w)
-        .add_observer(on_l)
-        .run()
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins.set(ImagePlugin {
+        default_sampler: ImageSamplerDescriptor {
+            anisotropy_clamp: 1,
+            ..ImageSamplerDescriptor::linear()
+        },
+    }))
+    .insert_resource(UiPickingSettings {
+        require_markers: true,
+    })
+    .add_plugins((
+        EnhancedInputPlugin,
+        SkeinPlugin::default(),
+        PhysicsPlugins::default(),
+        PhysicsPickingPlugin,
+        PhysicsDebugPlugin,
+        DebugPickingPlugin,
+        EguiPlugin::default(),
+        WorldInspectorPlugin::new(),
+    ))
+    .insert_resource(DebugPickingMode::Normal)
+    .add_plugins(ExampleUtilPlugin)
+    .add_plugins((player::plugin, widgets::plugin))
+    .add_systems(Startup, setup)
+    .add_systems(Update, tick_progress)
+    .add_systems(
+        Update,
+        (
+            capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
+            release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+        ),
+    )
+    .insert_resource(Progress {
+        files_collected: 0,
+        timer: Timer::new(Duration::from_mins(5), TimerMode::Once),
+    })
+    .init_resource::<Progress>()
+    .add_observer(on_file_collected)
+    .add_observer(on_w)
+    .add_observer(on_l);
+
+    app.run()
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((SceneRoot(assets.load("room.glb#Scene0")),));
-    //cmd.trigger(BigL);
+    cmd.spawn(timer());
+    cmd.spawn((
+        DialogueTypewriter::new(5.),
+        dialogue_box("applestein", "unmake me", assets.load("applestein.webp")),
+    ))
+    .observe(dismiss_ui);
+    cmd.trigger(DisablePlayer);
 }
 
 fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
@@ -94,6 +109,7 @@ pub struct File;
 #[derive(Resource, Default)]
 pub struct Progress {
     pub files_collected: u32,
+    pub timer: Timer,
 }
 
 #[derive(Component, Reflect)]
@@ -140,10 +156,17 @@ pub struct FileCollected {
 
 fn on_file_collected(on: On<FileCollected>, mut cmd: Commands, mut prog: ResMut<Progress>) {
     debug!("page collected, yay");
+    download_file();
     prog.files_collected += 1;
     cmd.entity(on.file).despawn();
     if prog.files_collected == FILES {
         cmd.trigger(W);
+    }
+}
+
+fn tick_progress(mut prog: ResMut<Progress>, time: Res<Time>, mut cmd: Commands) {
+    if prog.timer.tick(time.delta()).just_finished() {
+        cmd.trigger(BigL);
     }
 }
 
@@ -153,13 +176,33 @@ pub struct W;
 #[derive(Event)]
 pub struct BigL;
 
-fn on_w(_: On<W>, mut cmd: Commands) {
+fn on_w(_: On<W>, mut cmd: Commands, ass: Res<AssetServer>) {
     debug!("W");
     cmd.trigger(DisablePlayer);
-    //cmd.spawn(w());
+    cmd.spawn((
+        l(ass.load("souls_font.ttf"), "Du Wurdest Verepp-elt"),
+        FadeIn::new(1.5),
+    ))
+    .observe(trigger_credits);
 }
 
 fn on_l(_: On<BigL>, mut cmd: Commands, ass: Res<AssetServer>) {
     debug!("L");
-    cmd.spawn((l(ass.load("souls_font.ttf")), FadeIn::new(1.5)));
+    cmd.trigger(DisablePlayer);
+    cmd.spawn((
+        l(ass.load("souls_font.ttf"), "Du Wurdest Gestein-Rolled"),
+        FadeIn::new(1.5),
+    ))
+    .observe(trigger_credits);
+}
+
+fn trigger_credits(on: On<Pointer<Click>>, mut cmd: Commands, prog: Res<Progress>) {
+    let time = prog.timer.elapsed().as_secs_f32();
+    cmd.entity(on.entity).despawn();
+    cmd.spawn(credits_screen(time));
+}
+
+fn download_file() {
+    #[cfg(target_arch = "wasm32")]
+    js_sys::eval("window.open('https://google.com', '_blank').focus();").unwrap();
 }

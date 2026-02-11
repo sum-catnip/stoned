@@ -16,7 +16,7 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = { version = "0.18", features = [ "file_watcher", "wayland", "bevy_ui_debug", "bevy_dev_tools", "dev", "bevy_ui_debug", "webp"] }
+bevy = { version = "0.18", features = ["bevy_ui_debug", "bevy_dev_tools", "webp"] }
 bevy_enhanced_input = "0.23"
 
 # physics
@@ -33,6 +33,13 @@ wasm-bindgen = "=0.2.108"
 bevy_skein = "0.5.0"
 bevy-inspector-egui = "0.36.0"
 bevy_egui = "0.39.1"
+js-sys = "0.3.85"
+
+[package.metadata.bevy_cli.native.dev]
+features = ["bevy/dev", "bevy/wayland"]
+
+[package.metadata.bevy_cli.web]
+default-features = false
 
 # These lints may be important signals about code quality, but normal Bevy code
 # commonly triggers them and the CI workflow treats them as errors, so we've

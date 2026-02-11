@@ -1,9 +1,11 @@
 use avian_pickup::{
+    Holding,
     actor::AvianPickupActorState,
     input::{AvianPickupAction, AvianPickupInput},
 };
 use avian3d::prelude::*;
 use bevy::{
+    anti_alias::fxaa::Fxaa,
     core_pipeline::{prepass::DepthPrepass, tonemapping::Tonemapping},
     ecs::entity_disabling::Disabled,
     post_process::{bloom::Bloom, dof::DepthOfField, effect_stack::ChromaticAberration},
@@ -128,9 +130,13 @@ fn spawn_player(
                 },
                 ..Default::default()
             },
+            UiPickingCamera,
             IsDefaultUiCamera,
             (
-                Msaa::Sample8,
+                //Msaa::Sample8,
+                // has to be off for wasm build
+                Msaa::Off,
+                Fxaa::default(),
                 Bloom::NATURAL,
                 Hdr,
                 DepthPrepass,
@@ -153,12 +159,10 @@ fn spawn_player(
 
 fn check_page_collect(
     mut cmd: Commands,
-    player: Res<PlayerRes>,
-    mut actor_state: Single<&mut AvianPickupActorState>,
-    mut pickup_inputs: MessageWriter<AvianPickupInput>,
+    mut actor_state: Single<(Entity, &mut AvianPickupActorState)>,
     files: Query<Entity, With<File>>,
 ) {
-    let AvianPickupActorState::Holding(e) = actor_state.as_ref() else {
+    let AvianPickupActorState::Holding(e) = actor_state.1.as_ref() else {
         return;
     };
 
@@ -166,13 +170,9 @@ fn check_page_collect(
         return;
     }
 
-    // todo: Prop entity was deleted or in an invalid state.
-    pickup_inputs.write(AvianPickupInput {
-        actor: player.cam.unwrap(),
-        action: AvianPickupAction::Drop,
-    });
     cmd.trigger(FileCollected { file: *e });
-    *actor_state.as_mut() = AvianPickupActorState::Idle;
+    *actor_state.1.as_mut() = AvianPickupActorState::Idle;
+    cmd.entity(actor_state.0).remove::<Holding>();
 }
 
 fn on_enable(_: On<EnablePlayer>, mut cmd: Commands, player: Res<PlayerRes>) {
