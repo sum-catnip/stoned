@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_easy_gif::{GifAsset, GifNode};
 
 use crate::{Progress, player::EnablePlayer};
 
@@ -85,7 +86,7 @@ pub fn dismiss_ui(on: On<Pointer<Click>>, mut cmd: Commands) {
 pub fn dialogue_box(
     speaker: impl Into<String>,
     body: impl Into<String>,
-    portrait: Handle<Image>,
+    portrait: Handle<GifAsset>,
 ) -> impl Bundle {
     (
         DialogueOverlay,
@@ -394,7 +395,7 @@ fn update_timer(mut label: Single<&mut Text, With<TimerUi>>, time: Res<Progress>
 fn dialogue_panel(
     speaker: impl Into<String>,
     body: impl Into<String>,
-    portrait: Handle<Image>,
+    portrait: Handle<GifAsset>,
 ) -> impl Bundle {
     (
         DialoguePanel,
@@ -421,7 +422,7 @@ fn dialogue_panel(
     )
 }
 
-fn portrait_frame(image: Handle<Image>) -> impl Bundle {
+fn portrait_frame(image: Handle<GifAsset>) -> impl Bundle {
     (
         DialoguePortrait,
         Node {
@@ -434,7 +435,7 @@ fn portrait_frame(image: Handle<Image>) -> impl Bundle {
         },
         BorderColor::all(PANEL_BORDER),
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-        ImageNode::new(image),
+        GifNode { handle: image },
     )
 }
 

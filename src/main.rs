@@ -1,5 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 mod blob;
+mod dialogue;
+mod k;
+mod player;
+mod utils;
+mod widgets;
 
 use avian3d::prelude::*;
 use bevy::{
@@ -10,24 +15,22 @@ use bevy::{
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
+use bevy_easy_gif::GifPlugin;
 use bevy_egui::EguiPlugin;
 use bevy_enhanced_input::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_seedling::sample::SamplePlayer;
+use bevy_seedling::{SeedlingPlugin, sample::SamplePlayer};
 use bevy_skein::SkeinPlugin;
 
 use crate::{
     blob::Blob,
+    dialogue::{Dialogues, StartDialogue, intro},
     player::DisablePlayer,
     utils::ExampleUtilPlugin,
-    widgets::{DialogueTypewriter, FadeIn, credits_screen, dialogue_box, dismiss_ui, l, timer},
+    widgets::{FadeIn, credits_screen, l, timer},
 };
 
-mod player;
-mod utils;
-mod widgets;
-
-const FILES: u32 = 5;
+const FILES: u32 = 1;
 
 fn main() -> AppExit {
     let mut app = App::new();
@@ -41,6 +44,8 @@ fn main() -> AppExit {
         require_markers: true,
     })
     .add_plugins((
+        GifPlugin,
+        SeedlingPlugin::default(),
         EnhancedInputPlugin,
         SkeinPlugin::default(),
         PhysicsPlugins::default(),
@@ -52,7 +57,7 @@ fn main() -> AppExit {
     ))
     .insert_resource(DebugPickingMode::Normal)
     .add_plugins(ExampleUtilPlugin)
-    .add_plugins((player::plugin, widgets::plugin, blob::plugin))
+    .add_plugins((player::plugin, widgets::plugin, blob::plugin, k::plugin))
     .add_systems(Startup, setup)
     .add_systems(Update, tick_progress)
     .add_systems(
@@ -76,13 +81,8 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((SceneRoot(assets.load("room.glb#Scene0")),));
+    cmd.run_system_cached(intro);
     cmd.spawn(timer());
-    cmd.spawn((
-        DialogueTypewriter::new(5.),
-        dialogue_box("applestein", "unmake me", assets.load("applestein.webp")),
-    ))
-    .observe(dismiss_ui);
-    cmd.trigger(DisablePlayer);
 }
 
 fn capture_cursor(mut cursor: Single<&mut CursorOptions>) {
@@ -110,6 +110,7 @@ pub enum CollisionLayer {
 pub struct File {
     pub file: String,
     pub sound: String,
+    pub dialogue: Dialogues,
 }
 
 #[derive(Resource, Default)]
@@ -172,6 +173,7 @@ fn on_file_collected(
     cmd.spawn(SamplePlayer::new(ass.load(&file.sound)));
     let _: Handle<Blob> = ass.load(&file.file);
     prog.files_collected += 1;
+    cmd.queue(StartDialogue(file.dialogue));
     cmd.entity(on.file).despawn();
     if prog.files_collected == FILES {
         cmd.trigger(W);
@@ -193,6 +195,7 @@ pub struct BigL;
 fn on_w(_: On<W>, mut cmd: Commands, ass: Res<AssetServer>) {
     debug!("W");
     cmd.trigger(DisablePlayer);
+    cmd.spawn(SamplePlayer::new(ass.load("siren.ogg")).looping());
     cmd.spawn((
         l(ass.load("souls_font.ttf"), "Du Wurdest Verepp-elt"),
         FadeIn::new(1.5),

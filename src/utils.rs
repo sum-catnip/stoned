@@ -143,7 +143,7 @@ fn setup_ui(mut commands: Commands) {
             ..default()
         },
         Text::new(
-            "Controls:\nWASD: move\nSpace: jump\nCtrl: crouch\nEsc: free mouse\nR: reset position\nBacktick: Toggle Debug Menu",
+            "Controls:\nWASD: move\nSpace: jump\nCtrl: crouch\nEsc: free mouse\nE: pickup object\nQ: drop object",
         ),
     ));
     commands.spawn((

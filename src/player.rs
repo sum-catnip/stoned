@@ -16,7 +16,7 @@ use bevy_ahoy::{PickupHoldConfig, PickupPullConfig, prelude::*};
 use bevy_enhanced_input::prelude::Press;
 use bevy_enhanced_input::prelude::*;
 
-use crate::{CollisionLayer, File, FileCollected, Progress};
+use crate::{CollisionLayer, File, FileCollected, Progress, k::K};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(AhoyPlugins::default())
@@ -115,6 +115,7 @@ fn spawn_player(
     let playercam = cmd
         .spawn((
             Name::new("player cam"),
+            K::default(),
             PickupConfig {
                 prop_filter: SpatialQueryFilter::from_mask(CollisionLayer::Prop),
                 actor_filter: SpatialQueryFilter::from_mask(CollisionLayer::Player),

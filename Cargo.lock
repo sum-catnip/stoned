@@ -851,6 +851,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_easy_gif"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e85d7456fba83dd24327f6e2dc04c16a211659e28a1b1157c3365d8b06eb02cf"
+dependencies = [
+ "bevy",
+ "gif",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "bevy_ecs"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2336,6 +2347,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "color_quant"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
+
+[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3436,6 +3453,16 @@ dependencies = [
  "r-efi",
  "wasip2",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "gif"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ae047235e33e2829703574b54fdec96bfbad892062d97fed2f76022287de61b"
+dependencies = [
+ "color_quant",
+ "weezl",
 ]
 
 [[package]]
@@ -6058,6 +6085,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_ahoy",
+ "bevy_easy_gif",
  "bevy_egui",
  "bevy_enhanced_input",
  "bevy_fix_cursor_unlock_web",

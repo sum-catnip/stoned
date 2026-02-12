@@ -36,6 +36,7 @@ bevy_egui = "0.39.1"
 js-sys = "0.3.85"
 bevy_seedling = "0.7.0"
 thiserror = "2.0.18"
+bevy_easy_gif = "0.3.0"
 
 [dependencies.web-sys]
 version = "0.3.85"
