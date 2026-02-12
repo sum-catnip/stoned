@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+mod blob;
 
 use avian3d::prelude::*;
 use bevy::{
@@ -12,9 +13,11 @@ use bevy::{
 use bevy_egui::EguiPlugin;
 use bevy_enhanced_input::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_seedling::sample::SamplePlayer;
 use bevy_skein::SkeinPlugin;
 
 use crate::{
+    blob::Blob,
     player::DisablePlayer,
     utils::ExampleUtilPlugin,
     widgets::{DialogueTypewriter, FadeIn, credits_screen, dialogue_box, dismiss_ui, l, timer},
@@ -49,7 +52,7 @@ fn main() -> AppExit {
     ))
     .insert_resource(DebugPickingMode::Normal)
     .add_plugins(ExampleUtilPlugin)
-    .add_plugins((player::plugin, widgets::plugin))
+    .add_plugins((player::plugin, widgets::plugin, blob::plugin))
     .add_systems(Startup, setup)
     .add_systems(Update, tick_progress)
     .add_systems(
@@ -104,7 +107,10 @@ pub enum CollisionLayer {
 #[require(Visibility)]
 #[reflect(Component)]
 #[type_path = "stoned"]
-pub struct File;
+pub struct File {
+    pub file: String,
+    pub sound: String,
+}
 
 #[derive(Resource, Default)]
 pub struct Progress {
@@ -154,9 +160,17 @@ pub struct FileCollected {
     pub file: Entity,
 }
 
-fn on_file_collected(on: On<FileCollected>, mut cmd: Commands, mut prog: ResMut<Progress>) {
-    debug!("page collected, yay");
-    download_file();
+fn on_file_collected(
+    on: On<FileCollected>,
+    mut cmd: Commands,
+    mut prog: ResMut<Progress>,
+    files: Query<&File>,
+    ass: Res<AssetServer>,
+) {
+    debug!("file collected, yay");
+    let file = files.get(on.file).unwrap();
+    cmd.spawn(SamplePlayer::new(ass.load(&file.sound)));
+    let _: Handle<Blob> = ass.load(&file.file);
     prog.files_collected += 1;
     cmd.entity(on.file).despawn();
     if prog.files_collected == FILES {
@@ -200,9 +214,4 @@ fn trigger_credits(on: On<Pointer<Click>>, mut cmd: Commands, prog: Res<Progress
     let time = prog.timer.elapsed().as_secs_f32();
     cmd.entity(on.entity).despawn();
     cmd.spawn(credits_screen(time));
-}
-
-fn download_file() {
-    #[cfg(target_arch = "wasm32")]
-    js_sys::eval("window.open('https://google.com', '_blank').focus();").unwrap();
 }
