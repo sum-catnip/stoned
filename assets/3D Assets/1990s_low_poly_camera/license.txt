@@ -1,0 +1,11 @@
+Model Information:
+* title:	1990s Low Poly Camera
+* source:	https://sketchfab.com/3d-models/1990s-low-poly-camera-f226e482ab144773a211ae6f048ac85d
+* author:	EL-O461 (https://sketchfab.com/EL-O461)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "1990s Low Poly Camera" (https://sketchfab.com/3d-models/1990s-low-poly-camera-f226e482ab144773a211ae6f048ac85d) by EL-O461 (https://sketchfab.com/EL-O461) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
